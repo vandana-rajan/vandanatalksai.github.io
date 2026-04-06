@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          max-width: 800px;
+          margin: 40px auto;
+          padding: 0 20px;
+          line-height: 1.7;
+          color: #111;
+        }
+        
+        h1 {
+          font-size: 32px;
+        }
+        
+        p {
+          margin-bottom: 16px;
+        }
+        
+        a {
+          color: #0366d6;
+          text-decoration: none;
+        }
+        
+        a:hover {
+          text-decoration: underline;
+        }
+        </style>
+  <title>From Audio Waveform to Mel Spectrogram</title>
+</head>
+<body>
+
+    <div style="margin-bottom:20px; font-size:14px;">
+        <a href="../index.html">← Back to home</a>
+    </div>
+    
+<h1>From Audio Waveform to Mel Spectrogram: The DSP Foundations Behind ASR Systems</h1>
+
+<p><b>Introduction:</b></p>
+
+<p>
+This post walks through the Digital Signal Processing (DSP) foundations behind modern Automatic Speech Recognition (ASR) systems, 
+using the popular Whisper model as an example. 
+The goal is to make the material accessible even to readers without a background in audio DSP. 
+Wherever useful, I link directly to relevant parts of the <a href="https://github.com/openai/whisper/tree/main">original Whisper codebase from OpenAI</a>.
+</p>
+
+<p><b>From vocal chords to digital audio</b></p>
+
+<p>
+Human vocal chords vibrate during speaking. This becomes a pressure wave that reaches the transducers inside the microphone, where it gets converted into an analog electrical signal. 
+An Analog-to-Digital-Converter (ADC) then samples this signal in time. The rate at which this sampling happens is called <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L13">‘sampling_rate’ or ‘sampling_frequency’</a>, having typical values like 16K Hz, 44.1 KHz etc. 
+The chosen sampling rate should be at-least twice the expected highest frequency, also known as Nyquist frequency, present in the signal (Nyquist theorem). 
+Human speech is typically band-limited to 8K Hz, which is why it is common to use 16 KHz as Fs for ASR applications. 
+Now, the sampled signal still has continuous amplitude values, so quantization with a fixed step-size is performed to discretize this amplitude. 
+This process converts the signal into the digital domain. 
+</p>
+
+<p>
+A bit of a side track here. 
+</p>
+
+<p><b>Why spectrograms?</b></p>
+
+<p>
+Many deep learning based audio models work in the frequency domain, and not the time domain. 
+A long history of audio signal processing showed that the preference for frequency domain actually came from the observation that it is closer to human auditory perception. 
+Another reason is that time domain raw audio is very high dimensional. To represent a 1 second audio, we need 16000 samples (if sampling frequency or Fs is 16 KHz). 
+Instead, a frequency domain spectrogram uses a 2D compact representation for the same signal and hence makes it more manageable. 
+Also, yet another informal reason is that, when interest in DL started re-emerging due to AlexNet, the image and computer vision community were the front runners and the audio community kind of followed upon their research successes. 
+Nevertheless, there are some works like WaveNet (and also a <a href="https://github.com/smartcameras/ConflictNET">very humble work by myself</a>  😀) that use 1D audio signals. 
+</p>
+
+<p>
+    Let's get back to the main topic.
+</p>
+
+<p>
+
+So far, our quantized digital signal is still in the time domain. 
+Meaning that, if we plot it on an X-Y axis, X would be time-stamps and Y would be amplitude. 
+An audio signal is a non-stationary signal, meaning that its statistical properties change with time over the entire signal. 
+So, to convert it into the frequency domain, we cannot simply apply a Fourier Transform (FT) over the whole signal. 
+If we do so, we lose temporal information about when frequencies occur. 
+So, we chunk the signal into short overlapping windows of <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L14">specific length</a>, where the signal is locally stationary, and perform FT over these windows. 
+This is called Short-Time-Fourier-Transform or STFT.
+
+</p>
+
+<p>
+    Now, a bit of side track here too, into classical digital signal processing. Please bless me Prof. Oppenheim and Prof. Schafer! 
+
+</p>
+
+<p>
+    Mr. Fourier was said to have been looking at waves in the sea, when he had his Eureka moment. 
+    He imagined that a periodic signal can be represented as the sum of an infinite number of sine and cosine waves having a base/fundamental frequency (f0) and integer multiples of this f0 (called harmonics). 
+    He formulated the Fourier Series to represent such periodic signals in the frequency domain. 
+    The logic was, periodic in time would mean discrete in frequency (f0, 2f0, 3f0 etc). 
+    Now, what about aperiodic signals? For this, he made Fourier Transform. 
+    Here, the logic he used was, aperiodic in time would mean continuous in frequency, meaning the signal would contain not just a base frequency and its integer multiples, but all frequencies (theoretically). 
+    That's why the FT equation has an integral while the FS has a summation. 
+    Now, even though our speech signals are locally pseudo-periodic and globally aperiodic, for most practical purposes, we consider them as aperiodic and apply STFT. 
+    Now, the Fourier Transform (and by extension, STFT) was originally formulated for analog signals. 
+    However, computers handle discrete digital signals (the output from the ADC). 
+    So, in practice, the FT is replaced by its discrete counterpart, the Discrete Fourier Transform (DFT), which operates on digital signals. 
+    In modern systems, a faster version of DFT, called Fast Fourier Transform (FFT), is used. 
+    So practically, STFT involves repeatedly applying FFT over successive short chunks of the digital signal.
+
+</p>
+
+<p>
+    STFT applies 'windows' of different shapes (rectangular, triangle, <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L147">raised cosine</a> etc) over each short chunk of the signal, an operation called 'windowing'. 
+    Now, why do we need this windowing process? DFT/FFT works on a finite block of the signal under the assumption that this block is one period of a periodic signal, meaning it treats the block as if it repeats infinitely. 
+    If the end of the block doesn't match the beginning, this creates an artificial discontinuity, introducing what is known as the spectral leakage, i.e, fake frequency content that wasn't in the original signal. 
+    Windowing is introduced to taper the edges to zero, minimizing this artifact.
+    Now, we use overlapping windows and the amount of overlap is controlled by a parameter called <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L15">hop length</a>, defined by the number of samples we advance the window between successive chunks. 
+    The smaller the hop length, the finer the time resolution. 
+    Time vs frequency resolution trade off here can be considered an instance of time-frequency uncertainty principle (also informally compared to the Heisenberg Uncertainty Principle). 
+    When FFT magnitudes (discarding phase info.) of all windowed chunks are laid side-by-side to form an image, the resulting visual representation is called a spectrogram. 
+    The spectrogram has time as X axis, frequency as Y axis and colours representing magnitude. 
+</p>
+
+<p>
+    Whisper (as well as many other audio DL models) expects its input spectrogram to be in mel-scale rather than a linear scale. 
+    Mel-scale better matches human auditory perception, which is more sensitive to differences in lower frequency bands compared to higher frequency bands. 
+    So a mel-spectrogram gives more <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L124C5-L125C75">bins</a> to low frequencies where perception is sensitive, and fewer bins to high frequencies where perception is coarser. 
+    Now, what is a bin here? When we compute the DFT of N samples (within a windowed chunk), we get a total of N complex output values. For real-signals like speech, output is conjugate symmetric, so we keep only N/2+1 (1 to account for DC component or the mean of the signal) and discard the redundant N/2 -1. 
+    Now the total N/2 + 1 outputs together represent frequencies from 0 to the Nyquist frequency. 
+    Each of the outputs is a bin , representing the Fs / N range of frequencies. 
+    We can think of it as each bin storing how much energy exists at that frequency range in that time frame. 
+    Now, in a linear spectrogram, bins are equally spaced, so high frequencies get just as many bins as low frequencies. 
+    In mel-scale, bins are spaced perceptually, so, the lower frequencies get more bins and higher frequencies get fewer bins. 
+    Next, <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L154">logarithm is applied over this mel spectrogram</a> before inputting it to the DL model. 
+    Taking the log is also part of aligning the spectrogram to human perception. 
+    Just like how the human ear perceives frequencies non-linearly, it also perceives loudness non-linearly. 
+    Human perception of amplitude is logarithmic, hence log mel spectrogram.
+
+</p>
+
+</body>
+</html>
