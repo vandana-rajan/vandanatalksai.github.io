@@ -35,10 +35,10 @@
     <div style="margin-bottom:20px; font-size:14px;">
         <a href="../index.html">← Back to home</a>
     </div>
-    
+
 <h1>From Audio Waveform to Mel Spectrogram: The DSP Foundations Behind ASR Systems</h1>
 
-<p><b>Introduction:</b></p>
+<p><b>Introduction</b></p>
 
 <p>
 This post walks through the Digital Signal Processing (DSP) foundations behind modern Automatic Speech Recognition (ASR) systems, 
@@ -90,18 +90,19 @@ This is called Short-Time-Fourier-Transform or STFT.
 </p>
 
 <p>
-    Now, a bit of side track here too, into classical digital signal processing. Please bless me Prof. Oppenheim and Prof. Schafer! 
+    Now, a bit of side track here too, into classical digital signal processing. Please bless me <a href="https://books.google.co.uk/books/about/Digital_Signal_Processing.html?id=vfdSAAAAMAAJ&redir_esc=y">Prof. Oppenheim and Prof. Schafer</a>! 
 
 </p>
 
+<p><b>All those Fouriers</b></p>
 <p>
     Mr. Fourier was said to have been looking at waves in the sea, when he had his Eureka moment. 
     He imagined that a periodic signal can be represented as the sum of an infinite number of sine and cosine waves having a base/fundamental frequency (f0) and integer multiples of this f0 (called harmonics). 
-    He formulated the Fourier Series to represent such periodic signals in the frequency domain. 
+    He formulated the Fourier Series (FS) to represent such periodic signals in the frequency domain. 
     The logic was, periodic in time would mean discrete in frequency (f0, 2f0, 3f0 etc). 
-    Now, what about aperiodic signals? For this, he made Fourier Transform. 
+    Now, what about aperiodic signals? For this, he made Fourier Transform (FT). 
     Here, the logic he used was, aperiodic in time would mean continuous in frequency, meaning the signal would contain not just a base frequency and its integer multiples, but all frequencies (theoretically). 
-    That's why the FT equation has an integral while the FS has a summation. 
+    That's why the <a href="https://mathworld.wolfram.com/FourierTransform.html">FT equation has an integral</a> while the <a href="https://www.mathsisfun.com/calculus/fourier-series.html">FS has a summation</a>. 
     Now, even though our speech signals are locally pseudo-periodic and globally aperiodic, for most practical purposes, we consider them as aperiodic and apply STFT. 
     Now, the Fourier Transform (and by extension, STFT) was originally formulated for analog signals. 
     However, computers handle discrete digital signals (the output from the ADC). 
@@ -122,6 +123,8 @@ This is called Short-Time-Fourier-Transform or STFT.
     When FFT magnitudes (discarding phase info.) of all windowed chunks are laid side-by-side to form an image, the resulting visual representation is called a spectrogram. 
     The spectrogram has time as X axis, frequency as Y axis and colours representing magnitude. 
 </p>
+
+<p><b>Mel v/s linear scale for spectrograms</b></p>
 
 <p>
     Whisper (as well as many other audio DL models) expects its input spectrogram to be in mel-scale rather than a linear scale. 
