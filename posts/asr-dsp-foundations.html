@@ -51,31 +51,26 @@ Wherever useful, I link directly to relevant parts of the <a href="https://githu
 
 <p>
 Human vocal chords vibrate during speaking. This becomes a pressure wave that reaches the transducers inside the microphone, where it gets converted into an analog electrical signal. 
-An Analog-to-Digital-Converter (ADC) then samples this signal in time. The rate at which this sampling happens is called <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L13">‘sampling_rate’ or ‘sampling_frequency’</a>, having typical values like 16K Hz, 44.1 KHz etc. 
+An Analog-to-Digital-Converter (ADC) then samples this signal in time. The rate at which this sampling happens is called <a href="https://github.com/openai/whisper/blob/main/whisper/audio.py#L13">‘sampling_rate’ or ‘sampling_frequency’</a>, (Fs) having typical values like 16K Hz, 44.1 KHz etc. 
 The chosen sampling rate should be at-least twice the expected highest frequency, also known as Nyquist frequency, present in the signal (Nyquist theorem). 
 Human speech is typically band-limited to 8K Hz, which is why it is common to use 16 KHz as Fs for ASR applications. 
 Now, the sampled signal still has continuous amplitude values, so quantization with a fixed step-size is performed to discretize this amplitude. 
 This process converts the signal into the digital domain. 
 </p>
 
-<p>
-A bit of a side track here. 
-</p>
 
-<p><b>Why spectrograms?</b></p>
+<p><b>Why spectrograms? Why not just use the time domain signal as it is?</b></p>
 
 <p>
-Many deep learning based audio models work in the frequency domain, and not the time domain. 
-A long history of audio signal processing showed that the preference for frequency domain actually came from the observation that it is closer to human auditory perception. 
-Another reason is that time domain raw audio is very high dimensional. To represent a 1 second audio, we need 16000 samples (if sampling frequency or Fs is 16 KHz). 
+Many Deep Learning (DL) based audio models work in the frequency domain, and not the time domain. 
+A long history of audio signal processing shows us that the preference for frequency domain actually comes from the observation that it is closer to human auditory perception. 
+Another reason is that the time domain raw audio is very high dimensional. To represent a 1 second audio, we need 16000 samples (if Fs is 16 KHz). 
 Instead, a frequency domain spectrogram uses a 2D compact representation for the same signal and hence makes it more manageable. 
-Also, yet another informal reason is that, when interest in DL started re-emerging due to AlexNet, the image and computer vision community were the front runners and the audio community kind of followed upon their research successes. 
-Nevertheless, there are some works like WaveNet (and also a <a href="https://github.com/smartcameras/ConflictNET">very humble work by myself</a>  😀) that use 1D audio signals. 
+Also, yet another informal reason is that, when interest in DL started re-emerging due to AlexNet, the image and computer vision community were the front runners and the audio community kind of followed upon their research successes, where images of audio signal (a.k.a spectrograms) had to be used.
+Nevertheless, there are some works like <a href="https://www.isca-archive.org/ssw_2016/vandenoord16_ssw.html">WaveNet</a> (and also a <a href="https://github.com/smartcameras/ConflictNET">very humble work by myself</a>  😀) that use 1D audio signals. 
 </p>
 
-<p>
-    Let's get back to the main topic.
-</p>
+<p><b>How exactly can we create these spectrograms?</b></p>
 
 <p>
 
@@ -90,7 +85,7 @@ This is called Short-Time-Fourier-Transform or STFT.
 </p>
 
 <p>
-    Now, a bit of side track here too, into classical digital signal processing. Please bless me <a href="https://books.google.co.uk/books/about/Digital_Signal_Processing.html?id=vfdSAAAAMAAJ&redir_esc=y">Prof. Oppenheim and Prof. Schafer</a>! 
+    Now, a bit of deep dive here, into classical digital signal processing. Please bless me <a href="https://books.google.co.uk/books/about/Digital_Signal_Processing.html?id=vfdSAAAAMAAJ&redir_esc=y">Prof. Oppenheim and Prof. Schafer</a>! 
 
 </p>
 
