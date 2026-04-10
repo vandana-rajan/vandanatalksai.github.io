@@ -27,6 +27,18 @@
       margin-bottom: 40px;
     }
 
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+    .profile-pic {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
     h1 {
       font-size: 36px;
       margin: 0;
@@ -103,8 +115,12 @@
 <body>
   <div class="container">
 
-    <header>
+    <header class="header">
+      <img src="images/profile.jpg" class="profile-pic" />
+
+    <div>
       <h1>Dr. Vandana Malayil</h1>
+
       <div class="subtitle">
         AI/ML Senior Research Engineer · LLMs · Audio/Speech · AI ML Systems
       </div>
@@ -114,6 +130,7 @@
         <a href="https://github.com/vandana-rajan" target="_blank">GitHub</a>
         <a href="https://scholar.google.com/citations?user=bnEfDR0AAAAJ&hl=en" target="_blank">Google Scholar</a>
       </div>
+    </div>
     </header>
 
 
